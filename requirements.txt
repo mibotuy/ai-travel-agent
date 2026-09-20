@@ -1,0 +1,13 @@
+# LangGraph + MCP 智能出行助手 依赖
+langgraph
+langchain-mcp-adapters
+mcp
+fastmcp
+langchain-openai
+openai
+python-dotenv
+httpx
+fastapi
+uvicorn
+openpyxl
+pandas

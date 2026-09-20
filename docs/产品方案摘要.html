@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 智能出行助手 · 产品方案摘要</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --card:#ffffff; --ink:#1f2937; --sub:#5b6675; --line:#e5e8ee;
+    --brand:#4f46e5; --brand2:#0ea5e9; --ok:#16a34a; --warn:#d97706; --bad:#dc2626;
+    --chip:#eef2ff; --shadow:0 1px 3px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.05);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+       color:var(--ink);background:var(--bg);line-height:1.7;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px;margin:0 auto;padding:40px 24px 64px}
+  h1{font-size:28px;margin:0 0 4px;letter-spacing:.5px}
+  h2{font-size:20px;margin:38px 0 12px;padding-bottom:6px;border-bottom:2px solid var(--line)}
+  .sub{color:var(--sub);font-size:15px;margin:0 0 8px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;
+        box-shadow:var(--shadow);margin:14px 0}
+  .grid{display:grid;gap:14px}
+  .g2{grid-template-columns:1fr 1fr}
+  @media(max-width:760px){.g2{grid-template-columns:1fr}}
+  .callout{border-left:4px solid var(--brand);background:#f5f3ff;padding:13px 17px;border-radius:0 10px 10px 0;margin:14px 0;font-size:14.5px}
+  .callout.green{border-color:var(--ok);background:#f0fdf4}
+  .callout.amber{border-color:var(--warn);background:#fffbeb}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0;background:#fff}
+  th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:#f3f4f6;font-weight:600;color:#374151}
+  tr:nth-child(even) td{background:#fcfcfd}
+  .tag{font-size:12px;padding:2px 8px;border-radius:6px;font-weight:600}
+  .t-ok{background:#dcfce7;color:#166534}.t-warn{background:#fef3c7;color:#92400e}.t-info{background:#e0f2fe;color:#075985}
+  .flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0;justify-content:center}
+  .flow .step{background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px 12px;font-size:13px;box-shadow:var(--shadow)}
+  .flow .arrow{color:var(--sub);font-weight:700}
+  .flow .hl{background:var(--brand);color:#fff;border-color:var(--brand)}
+  code{background:#f1f3f7;padding:1px 6px;border-radius:5px;font-size:13px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .muted{color:var(--sub);font-size:13.5px}
+  ul.tight{margin:6px 0;padding-left:20px}.tight li{margin:4px 0}
+  .foot{margin-top:40px;padding-top:14px;border-top:1px solid var(--line);color:var(--sub);font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>AI 智能出行助手 · 产品方案摘要</h1>
+  <p class="sub">一份面向 AI PM 面试的作品集配套页 · 从「用户问题」出发，而非「技术清单」</p>
+
+  <div class="card">
+    <p style="margin:0"><b>一句话定位：</b>用户只描述出行需求，由 Agent 自动理解意图、选择工具、组合结果并给出完整方案——把跨「天气 / 地图 / 高铁」的信息拼接与决策从用户身上转移给系统。</p>
+  </div>
+
+  <h2>1. 用户问题</h2>
+  <div class="card">
+    <p>跨城市出行时，用户往往需要连续完成「查天气 → 查目的地 → 查路线 → 查高铁 → 再调整计划」。传统工具的问题不是「没有功能」，而是<b>信息分散在多个工具中，用户要自己完成信息拼接和决策</b>。痛点是<b>信息分散 + 自行拼接</b>，而非「缺少某个功能」。</p>
+    <p class="muted">目标用户：高频跨城通勤者、商务出差党、自由行游客——需要「一句话把天气 + 路线 + 车次一次问完」。</p>
+  </div>
+
+  <h2>2. 为什么是 Agent，而不是固定 Workflow</h2>
+  <div class="callout green">
+    出行需求具有较强不确定性：用户可能只问天气，也可能同时问天气 + 路线 + 高铁，还可能在多轮中临时改变目的地。相比「固定流程 + 分支判断」的 Workflow，<b>Agent 更适合根据用户意图动态决定调用哪些工具、以什么顺序调用</b>。这不是「技术很酷所以用了 Agent」，而是<b>产品需求形态决定了技术形态</b>——把天气、地图、高铁封装成可插拔 MCP 工具，让 LLM 中枢负责编排。
+  </div>
+
+  <h2>3. 需求优先级（产品取舍，而非有什么加什么）</h2>
+  <div class="card">
+    <table>
+      <tr><th>优先级</th><th>能力</th><th>用户价值</th><th>MVP</th></tr>
+      <tr><td><span class="tag t-ok">P0</span></td><td>天气查询</td><td>出行前获取环境信息</td><td>✅</td></tr>
+      <tr><td><span class="tag t-ok">P0</span></td><td>路线规划</td><td>解决跨城出行「怎么走」</td><td>✅</td></tr>
+      <tr><td><span class="tag t-ok">P0</span></td><td>多工具协同</td><td>减少用户多次操作与拼接</td><td>✅</td></tr>
+      <tr><td><span class="tag t-ok">P0</span></td><td>多轮对话</td><td>支持「那东京呢」这类追问</td><td>✅</td></tr>
+      <tr><td><span class="tag t-warn">P1</span></td><td>高铁线路参考</td><td>交通方式补充</td><td>✅</td></tr>
+      <tr><td><span class="tag t-warn">P1</span></td><td>POI 歧义处理</td><td>提升路线准确性</td><td>✅</td></tr>
+      <tr><td><span class="tag t-info">P2</span></td><td>流式输出</td><td>改善等待体感</td><td>V2</td></tr>
+      <tr><td><span class="tag t-info">P2</span></td><td>历史对话增强</td><td>提升长期使用体验</td><td>V2</td></tr>
+    </table>
+  </div>
+
+  <h2>4. 核心用户流程</h2>
+  <div class="card">
+    <div class="flow">
+      <span class="step">用户输入<br><span class="muted">「明天东莞天气？东莞到深圳怎么走」</span></span><span class="arrow">→</span>
+      <span class="step hl">Agent 理解意图</span><span class="arrow">→</span>
+      <span class="step">拆解需求<br><span class="muted">天气 / 出发地 / 目的地 / 路线</span></span><span class="arrow">→</span>
+      <span class="step">调用工具<br><span class="muted">天气 + 地图 + 高铁 MCP</span></span><span class="arrow">→</span>
+      <span class="step">结果融合</span><span class="arrow">→</span>
+      <span class="step hl">完整出行建议</span>
+    </div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3 style="margin-top:4px;font-size:16px">5. MVP 范围</h3>
+      <p class="muted"><b>P0（已交付）：</b>天气 / 路线 / 多工具协同 / 多轮 / 模糊需求澄清。<br>
+      <b>P1（已交付）：</b>高铁线路参考 / POI 容错 / 海外城市。<br>
+      <b>P2（V2 体验）：</b>流式输出 / 历史会话增强。</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:4px;font-size:16px">6. 产品验收指标</h3>
+      <table>
+        <tr><th>指标</th><th>标准</th></tr>
+        <tr><td>工具选择正确率</td><td>≥ 95%</td></tr>
+        <tr><td>参数提取正确率</td><td>≥ 95%</td></tr>
+        <tr><td>任务完成率</td><td>≥ 95%</td></tr>
+        <tr><td>无效工具调用率</td><td>≤ 5%</td></tr>
+        <tr><td>模糊需求澄清正确率</td><td>≥ 95%</td></tr>
+        <tr><td>稳定性回归</td><td>关键 Case 100% PASS</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <h2>7. 产品边界（可信 AI 的基本盘）</h2>
+  <div class="callout amber">
+    高铁为「<b>线路参考，以 12306 为准</b>」；跨国出行提示乘飞机（暂不接航班工具）；地图依赖高德 API（缺省优雅降级）；天气默认 Open-Meteo（免费免 Key）。边界在一开始就写进产品定义，而不是 Demo 跑出来再补。
+  </div>
+
+  <h2>8. 能力可迁移性（解决「项目领域与招聘公司业务不一致」）</h2>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3 style="margin-top:4px;font-size:16px">项目二 · Agent / 多工具</h3>
+      <table>
+        <tr><th>本项目能力</th><th>可迁移到企业业务</th></tr>
+        <tr><td>Agent 意图识别</td><td>企业智能助手</td></tr>
+        <tr><td>MCP 工具调用</td><td>CRM / ERP / OA 系统连接</td></tr>
+        <tr><td>多轮记忆</td><td>企业 Copilot</td></tr>
+        <tr><td>Tool Calling</td><td>自动化业务流程</td></tr>
+        <tr><td>AI Evaluation</td><td>企业 AI 应用质量评估</td></tr>
+        <tr><td>工具层容错</td><td>AI Agent 可靠性建设</td></tr>
+        <tr><td>能力边界控制</td><td>高风险业务 Guardrail</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:4px;font-size:16px">项目一 · RAG / 企业知识</h3>
+      <table>
+        <tr><th>本项目能力</th><th>可迁移到企业业务</th></tr>
+        <tr><td>RAG 检索增强</td><td>企业知识问答 / 智能客服 / 内部搜索</td></tr>
+        <tr><td>Chunk 切分策略</td><td>文档结构化处理</td></tr>
+        <tr><td>Rerank / 召回优化</td><td>搜索相关性提升</td></tr>
+        <tr><td>Query 改写 / 意图识别</td><td>企业搜索 / 工单分类</td></tr>
+        <tr><td>引用溯源（引用原文）</td><td>合规 / 审计 / 可解释</td></tr>
+        <tr><td>AI 评测体系</td><td>企业 AI 应用质量门禁</td></tr>
+        <tr><td>知识边界控制（答不出就说不知道）</td><td>幻觉防护 Guardrail</td></tr>
+      </table>
+    </div>
+  </div>
+  <p class="muted">两项目组合 = <b>「知识型 AI（RAG）+ 行动型 AI（Agent）」</b>，恰好覆盖最典型的 AI 应用形态。即使 Demo 是出行 / 知识库场景，这套方法论可直接迁移到招聘方的业务系统。</p>
+
+  <div class="foot">
+    本页为《项目二 · AI 出行助手 Case Study》的配套产品方案摘要，详细技术实现、评测与问题迭代见主 Case Study。项目一（企业知识库 RAG）能力可迁移性模块亦见主 Case Study。
+  </div>
+
+</div>
+</body>
+</html>

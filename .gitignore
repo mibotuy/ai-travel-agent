@@ -1,0 +1,23 @@
+# 密钥与本地配置
+.env
+*.db
+conversations.db
+
+# Python
+__pycache__/
+.venv/
+
+# 日志、备份、评测产物
+*.log
+*.bak
+*.bak*
+*.xlsx
+
+# 图片（含私人对话截图，不入库）
+*.png
+*.jpg
+*.jpeg
+
+# 打包与编辑器
+*.zip
+.DS_Store

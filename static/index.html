@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<title>AI 智能出行助手 · Agent + MCP</title>
+<link rel="icon" href="data:," />
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --card: #273449;
+    --accent: #38bdf8;
+    --accent2: #34d399;
+    --warn: #fbbf24;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --user: #2563eb;
+    --bot: #1e293b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    background: linear-gradient(160deg, #0f172a, #111827); color: var(--text);
+    height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+  }
+  header {
+    padding: 14px 22px; background: rgba(30,41,59,.8); backdrop-filter: blur(6px);
+    border-bottom: 1px solid #334155; display: flex; align-items: center; gap: 12px; flex: 0 0 auto;
+  }
+  header .logo { font-size: 22px; }
+  header h1 { font-size: 17px; margin: 0; font-weight: 600; }
+  header .sub { font-size: 12px; color: var(--muted); margin-left: auto; }
+  .toggle-sidebar { display: none; background: var(--panel); border: 1px solid #475569; color: var(--text);
+    font-size: 16px; border-radius: 8px; padding: 4px 10px; cursor: pointer; }
+  .layout { flex: 1; display: flex; overflow: hidden; min-height: 0; }
+  /* 侧边栏：深色卡片风格 */
+  .sidebar { width: 272px; flex: 0 0 272px; background: #111827;
+    border-right: 1px solid #1f2937; display: flex; flex-direction: column; min-height: 0; }
+  .sidebar .sb-head { padding: 16px 14px 12px; }
+  .sidebar .sb-title { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase;
+    letter-spacing: .06em; margin: 0 0 10px 4px; }
+  .new-btn { width: 100%; padding: 10px 12px; border: 1px solid #334155; border-radius: 999px;
+    background: #1f2937; color: var(--text); font-weight: 600; cursor: pointer; font-size: 14px;
+    display: flex; align-items: center; justify-content: center; gap: 6px; transition: background .15s, border-color .15s; }
+  .new-btn::before { content: "＋"; font-size: 16px; line-height: 1; color: var(--accent); }
+  .new-btn:hover { background: #273449; border-color: #475569; }
+  .sb-list { flex: 1; overflow-y: auto; padding: 6px 10px 10px; display: flex; flex-direction: column; gap: 4px; min-height: 0; scrollbar-width: none; -ms-overflow-style: none; }
+  .sb-list::-webkit-scrollbar { display: none; }
+  .sb-empty { padding: 18px 10px; color: var(--muted); font-size: 12.5px; text-align: center; line-height: 1.6; }
+  .conv-item { position: relative; display: flex; align-items: center; gap: 8px; padding: 10px 34px 10px 14px; border-radius: 10px;
+    cursor: pointer; border: 1px solid transparent; border-left: 3px solid transparent; background: transparent; transition: background .12s; }
+  .conv-item:hover { background: rgba(255,255,255,.05); }
+  .conv-item.active { background: rgba(56,189,248,.12); border-left-color: var(--accent); }
+  .conv-item .ci-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .conv-item .ci-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: #cbd5e1; }
+  .conv-item.active .ci-title { color: var(--text); font-weight: 500; }
+  .conv-item .ci-time { font-size: 11px; color: var(--muted); }
+  .conv-item .ci-del { position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    opacity: .55; color: var(--muted); background: none; border: none; cursor: pointer;
+    font-size: 13px; padding: 4px 6px; border-radius: 6px; transition: opacity .12s, color .12s, background .12s; }
+  .conv-item:hover .ci-del { opacity: 1; }
+  .conv-item .ci-del:hover { color: #fca5a5; background: rgba(255,255,255,.08); }
+  .sidebar .sb-foot { padding: 10px 14px; border-top: 1px solid #1f2937; }
+  .sidebar .sb-foot .hint { font-size: 11px; color: var(--muted); line-height: 1.5; }
+  /* 主内容 */
+  .content { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; position: relative; }
+  .inner { flex: 1; display: flex; flex-direction: column; max-width: 920px; margin: 0 auto; width: 100%; min-width: 0; min-height: 0; overflow: hidden; }
+  #chat { flex: 1; overflow-y: auto; padding: 20px 34px 20px 16px; display: flex; flex-direction: column; gap: 16px; min-height: 0; scrollbar-width: none; -ms-overflow-style: none; }
+  #chat::-webkit-scrollbar { display: none; }
+  .msg { max-width: 100%; padding: 12px 15px; border-radius: 14px; line-height: 1.6; font-size: 15px; white-space: pre-wrap; word-break: break-word; }
+  .user { background: var(--user); color: #fff; border-bottom-right-radius: 4px; align-self: flex-end; }
+  .bot  { background: var(--bot); border: 1px solid #334155; border-bottom-left-radius: 4px; align-self: flex-start; }
+  /* 消息外包裹层：承载气泡 + 时间戳，控制左右对齐 */
+  .msg-wrap { display: flex; flex-direction: column; max-width: 92%; }
+  .msg-wrap.user { align-self: flex-end; align-items: flex-end; }
+  .msg-wrap.bot  { align-self: flex-start; align-items: flex-start; }
+  .msg-time { font-size: 11px; color: var(--muted); margin: 4px 4px 0; }
+  /* 滚动位置指示器（侧边导航点）：蓝点=当前停留段，灰点=其他段 */
+  .scroll-dots { position: fixed; right: 14px; top: 50%; transform: translateY(-50%);
+    max-height: 72vh; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    gap: 9px; z-index: 80; pointer-events: none; }
+  .scroll-dots .sdot { pointer-events: auto; flex: 0 0 auto; width: 10px; height: 10px; border-radius: 50%;
+    background: #94a3b8; opacity: .6; cursor: pointer; transition: all .15s; box-shadow: 0 0 0 1px rgba(0,0,0,.3); }
+  .scroll-dots .sdot:hover { opacity: 1; background: var(--accent); }
+  .scroll-dots .sdot.active { background: var(--accent); opacity: 1; transform: scale(1.8);
+    box-shadow: 0 0 10px rgba(56,189,248,.9); }
+  /* 仅真·手机窄屏隐藏，避免横向空间不足 */
+  @media (max-width: 480px) { .scroll-dots { display: none; } }
+  .tools { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .tool { background: var(--card); border: 1px solid #334155; border-radius: 10px; padding: 10px 12px; font-size: 13px; }
+  .tool .head { display: flex; align-items: center; gap: 8px; margin-bottom: 0; cursor: pointer; user-select: none; }
+  .tool.open .head { margin-bottom: 6px; }
+  .tool .t-summary { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+  .tool .t-caret { color: var(--muted); font-size: 11px; transition: transform .15s; flex: 0 0 auto; }
+  .tool.open .t-caret { transform: rotate(90deg); }
+  .tool .t-detail { display: none; }
+  .tool.open .t-detail { display: block; }
+  .tool { border-left: 3px solid transparent; }
+  .tool--weather { border-left-color: var(--accent); }
+  .tool--map { border-left-color: var(--accent2); }
+  .tool--train { border-left-color: var(--warn); }
+  .tool--tool { border-left-color: var(--muted); }
+  .tool .t-status { flex: 0 0 auto; font-size: 12px; }
+  .tool .t-status.done { color: var(--accent2); }
+  .tool .t-status.pending { color: var(--warn); }
+  .tool .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+  .badge.weather { background: rgba(56,189,248,.18); color: var(--accent); }
+  .badge.map { background: rgba(52,211,153,.18); color: var(--accent2); }
+  .badge.train { background: rgba(251,191,36,.18); color: var(--warn); }
+  .tool .name { font-weight: 600; }
+  .tool .args { color: var(--muted); font-size: 12px; }
+  .tool .result { margin-top: 6px; padding: 8px 10px; background: #0f172a; border-radius: 8px; color: #cbd5e1; white-space: pre-wrap; font-size: 12.5px; max-height: 220px; overflow: auto; scrollbar-width: none; -ms-overflow-style: none; }
+  .tool .result::-webkit-scrollbar { display: none; }
+  .typing { align-self: flex-start; color: var(--muted); font-size: 13px; }
+  .examples { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px 10px; }
+  .chip { background: var(--panel); border: 1px solid #334155; color: var(--text); padding: 6px 12px; border-radius: 999px; cursor: pointer; font-size: 13px; }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  footer { padding: 12px 16px; background: rgba(30,41,59,.8); border-top: 1px solid #334155; }
+  .inputrow { display: flex; gap: 10px; max-width: 920px; margin: 0 auto; width: 100%; }
+  #q { flex: 1; padding: 12px 14px; border-radius: 12px; border: 1px solid #334155; background: #0f172a; color: var(--text); font-size: 15px; outline: none; }
+  #q:focus { border-color: var(--accent); }
+  #send { padding: 0 22px; border: none; border-radius: 12px; background: var(--accent); color: #05223a; font-weight: 700; font-size: 15px; cursor: pointer; }
+  #send:disabled { opacity: .5; cursor: default; }
+  .err { color: #fca5a5; }
+  .diag { padding: 8px 16px; background: rgba(30,41,59,.9); border-top: 1px solid #334155; font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .diag input { background: #0f172a; border: 1px solid #334155; color: var(--text); border-radius: 6px; padding: 4px 8px; width: 180px; font-size: 12px; }
+  .diag button { background: var(--panel); border: 1px solid #475569; color: var(--text); border-radius: 6px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+  .diag button:hover { border-color: var(--accent); color: var(--accent); }
+  .diag .status { font-weight: 600; }
+  .status.ok { color: var(--accent2); }
+  .status.fail { color: #fca5a5; }
+  .examples .chip.disabled { opacity: .5; pointer-events: none; }
+  .src-note { margin-top: 8px; font-size: 11.5px; color: var(--muted); border-top: 1px dashed #334155; padding-top: 6px; line-height: 1.5; }
+  .footnote { max-width: 920px; margin: 6px auto 0; width: 100%; font-size: 11px; color: var(--muted); text-align: center; }
+  @media (max-width: 760px) {
+    .toggle-sidebar { display: inline-flex; }
+    .sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: 60; transform: translateX(-100%); transition: transform .2s;
+      box-shadow: 4px 0 24px rgba(0,0,0,.35); }
+    .sidebar.open { transform: translateX(0); }
+  }
+</style>
+</head>
+<body>
+<header>
+  <button id="sbToggle" class="toggle-sidebar" title="历史对话">☰</button>
+  <span class="logo">🧳</span>
+  <h1>AI 智能出行助手</h1>
+  <span class="sub">LangGraph ReAct Agent · 天气/地图 MCP 多工具协同</span>
+</header>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-head">
+      <div class="sb-title">历史对话</div>
+      <button id="newChatBtn" class="new-btn">新建对话</button>
+    </div>
+    <div class="sb-list" id="sbList"></div>
+    <div class="sb-foot">
+      <div class="hint">历史对话保存在服务端，刷新 / 关闭页面后仍在；不同浏览器互不干扰。</div>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="scroll-dots" id="scrollDots"></div>
+    <div class="inner">
+      <div id="chat"></div>
+      <div class="examples" id="examples">
+        <span class="chip">明天北京天气怎么样？</span>
+        <span class="chip">上海虹桥站怎么走？</span>
+        <span class="chip">后天从北京去广州出差，看天气和路线</span>
+        <span class="chip">下周去北京出差，天安门怎么走</span>
+      </div>
+      <div class="diag">
+        <span>后端地址:</span>
+        <input id="apiBase" value="" placeholder="如 http://localhost:8000" />
+        <button id="saveBase">保存</button>
+        <button id="testConn">测试连接</button>
+        <span id="connStatus">未测试</span>
+      </div>
+      <footer>
+        <div class="inputrow">
+          <input id="q" placeholder="用自然语言描述你的出行需求…" autocomplete="off" />
+          <button id="send">发送</button>
+        </div>
+        <div class="footnote">数据来源：天气 Open-Meteo / 高德（预报参考）· 路线 高德地图 · 高铁 内置线路参考（实时以 12306 为准）· 海外城市需乘飞机</div>
+      </footer>
+    </div>
+  </main>
+</div>
+
+<script>
+const chat = document.getElementById('chat');
+const q = document.getElementById('q');
+const sendBtn = document.getElementById('send');
+const apiBaseInput = document.getElementById('apiBase');
+const saveBaseBtn = document.getElementById('saveBase');
+const testConnBtn = document.getElementById('testConn');
+const connStatus = document.getElementById('connStatus');
+const sbList = document.getElementById('sbList');
+const newBtn = document.getElementById('newChatBtn');
+const sbToggle = document.getElementById('sbToggle');
+const scrollDots = document.getElementById('scrollDots');
+const sidebar = document.getElementById('sidebar');
+
+// 兼容直接打开文件（file://）或反向代理等非 8000 端口场景
+let API_BASE = (window.location.protocol === 'file:')
+  ? (localStorage.getItem('api_base') || 'http://localhost:8000')
+  : (localStorage.getItem('api_base') || '');
+apiBaseInput.value = API_BASE;
+
+// 浏览器身份：持久保存，用于服务端按用户隔离历史对话
+// 支持 ?client_id=xxx 直接指定（便于分享/演示固定历史，不覆盖已有本地身份）
+let CLIENT_ID = new URLSearchParams(location.search).get('client_id') || localStorage.getItem('client_id');
+if (!CLIENT_ID) { CLIENT_ID = uuid(); }
+localStorage.setItem('client_id', CLIENT_ID);
+
+let SESSION_ID = null;     // 当前对话 id（= session_id，用于多轮上下文）
+let currentConvId = null;  // 当前在侧边栏选中的对话 id
+let conv = [];             // 当前对话的结构化消息：{role, text, steps?, notes?}
+let lastList = [];         // 最近一次拉取的历史列表
+
+function uuid() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+function setBusy(busy) {
+  sendBtn.disabled = busy;
+  document.querySelectorAll('#examples .chip').forEach(c => c.classList.toggle('disabled', busy));
+}
+function setStatus(html, ok) {
+  connStatus.innerHTML = html;
+  connStatus.className = 'status ' + (ok ? 'ok' : 'fail');
+}
+function scrollIfNearBottom() {
+  // 仅当用户已在底部附近时才自动滚到底，避免流式输出时把手动上滑的用户拽回去
+  if (chat.scrollHeight - chat.scrollTop - chat.clientHeight < 80) {
+    chat.scrollTop = chat.scrollHeight;
+  }
+}
+function toolBadge(name) {
+  if (name === 'query_weather') return '<span class="badge weather">天气</span>';
+  if (name === 'query_train') return '<span class="badge train">高铁</span>';
+  if (name.startsWith('maps_')) return '<span class="badge map">地图</span>';
+  return '<span class="badge">工具</span>';
+}
+// 把工具原始返回值提炼成「一行摘要」，默认折叠展示，点击再展开明细
+function toolSummary(name, args, result) {
+  const r = (typeof result === 'string') ? result : extractText(result);
+  let line = (r || '').split('\n')[0].trim();
+  if (name === 'query_weather') {
+    const m = line.match(/天气：(.+)$/);
+    return (m ? m[1] : line) || '天气查询';
+  }
+  if (line) {
+    // 轻微美化：距离去 .0、超长分钟转小时
+    line = line.replace(/(\d+\.\d+) 公里/, (_, p) => Math.round(parseFloat(p)) + ' 公里');
+    line = line.replace(/，(\d+) 分钟/, (_, p) => {
+      const m = +p; return m >= 60 ? '，约 ' + (m / 60).toFixed(1) + ' 小时' : '，' + m + ' 分钟';
+    });
+    return line;
+  }
+  return (name || '工具') + ' 调用';
+}
+function esc(s) {
+  return String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+}
+function paramRow(a) {
+  if (a == null) return '';
+  let s;
+  try { s = JSON.stringify(a, null, 0); } catch { s = String(a); }
+  if (!s || s === '{}') return '';
+  return '<div class="args">参数: ' + esc(s) + '</div>';
+}
+function extractText(r) {
+  if (r == null) return '（无返回）';
+  if (typeof r === 'string') return r;
+  if (Array.isArray(r)) {
+    return r.map(x => (x && x.text) ? x.text : (typeof x === 'string' ? x : JSON.stringify(x))).join('\n');
+  }
+  return JSON.stringify(r, null, 2);
+}
+function renderSteps(steps) {
+  if (!steps || !steps.length) return '';
+  let html = '<div class="tools">';
+  steps.forEach(s => { html += toolCardHTML(s.name, s.args, s.result); });
+  html += '</div>';
+  return html;
+}
+// 根据工具名返回卡片配色类型（对应左侧色条与徽章）
+function toolTypeClass(name) {
+  if (name === 'query_weather') return 'tool--weather';
+  if (name === 'query_train') return 'tool--train';
+  if (name && name.startsWith('maps_')) return 'tool--map';
+  return 'tool--tool';
+}
+// 生成一张「默认折叠」的工具卡片：首行摘要 + 可展开的参数与原始返回值
+function toolCardHTML(name, args, result) {
+  const hasResult = result != null;
+  const summary = hasResult ? toolSummary(name, args, result) : '⏳ 调用中…';
+  const detail = hasResult ? extractText(result) : '⏳ 调用中…';
+  const status = hasResult
+    ? '<span class="t-status done">✓</span>'
+    : '<span class="t-status pending">⏳</span>';
+  return '<div class="tool ' + toolTypeClass(name) + '">'
+    + '<div class="head tool-toggle" onclick="this.parentElement.classList.toggle(\'open\')">'
+    + status + toolBadge(name)
+    + '<span class="t-summary">' + esc(summary) + '</span>'
+    + '<span class="t-caret">▸</span>'
+    + '</div>'
+    + '<div class="t-detail">'
+    + paramRow(args)
+    + '<div class="result">🔧 返回: ' + esc(detail) + '</div>'
+    + '</div>'
+    + '</div>';
+}
+// 把消息时间戳（epoch 秒）格式化为「今天/昨天/M月D日 HH:MM」
+function formatTs(ts) {
+  if (!ts) return '';
+  const d = new Date(ts * 1000);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const that = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diff = Math.round((today - that) / 86400000);
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  if (diff === 0) return '今天 ' + hh + ':' + mm;
+  if (diff === 1) return '昨天 ' + hh + ':' + mm;
+  return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + hh + ':' + mm;
+}
+function renderMessage(m) {
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-wrap ' + (m.role === 'user' ? 'user' : 'bot');
+  const d = document.createElement('div');
+  d.className = 'msg ' + (m.role === 'user' ? 'user' : 'bot');
+  if (m.role === 'user') { d.textContent = m.text; }
+  else {
+    d.textContent = m.text || '';
+    if (m.steps && m.steps.length) {
+      const t = document.createElement('div');
+      t.innerHTML = renderSteps(m.steps);
+      d.appendChild(t);
+    }
+    if (m.notes && m.notes.length) {
+      const n = document.createElement('div');
+      n.className = 'src-note';
+      n.textContent = m.notes.join(' · ');
+      d.appendChild(n);
+    }
+  }
+  wrap.appendChild(d);
+  if (m.ts) {
+    const tm = document.createElement('div');
+    tm.className = 'msg-time';
+    tm.textContent = formatTs(m.ts);
+    wrap.appendChild(tm);
+  }
+  return wrap;
+}
+function welcomeNode() {
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-wrap bot';
+  const d = document.createElement('div');
+  d.className = 'msg bot';
+  d.textContent = '👋 你好，我是你的智能出行助手。试着问我天气、路线，或组合起来——比如「明天从北京去广州出差，看天气和路线」。左侧可查看历史对话。';
+  wrap.appendChild(d);
+  return wrap;
+}
+function renderAll() {
+  chat.innerHTML = '';
+  if (conv.length === 0) chat.appendChild(welcomeNode());
+  else conv.forEach(m => chat.appendChild(renderMessage(m)));
+  chat.scrollTop = chat.scrollHeight;
+  renderScrollDots();
+}
+// ---------- 右侧滚动位置指示器（侧边导航点）：每个问题一个点 ----------
+let dotEls = [];      // [{el, node}]，每个圆点对应一条“用户提问”
+let pageCount = 0;
+function renderScrollDots() {
+  scrollDots.innerHTML = '';
+  dotEls = [];
+  pageCount = 0;
+  // 每个“问题”（用户消息）生成一个圆点；不足 2 个问题时不显示
+  const questionNodes = Array.from(chat.children)
+    .filter(n => n.classList && n.classList.contains('user'));
+  if (questionNodes.length <= 1) { scrollDots.style.display = 'none'; return; }
+  scrollDots.style.display = '';
+  questionNodes.forEach((node, i) => {
+    const d = document.createElement('div');
+    d.className = 'sdot';
+    d.title = '问题 ' + (i + 1);
+    d.onclick = () => node.scrollIntoView({behavior: 'smooth', block: 'center'});
+    scrollDots.appendChild(d);
+    dotEls.push({el: d, node});
+  });
+  pageCount = dotEls.length;
+  updateActiveDot();
+}
+function updateActiveDot() {
+  if (!dotEls.length) return;
+  const chatTop = chat.getBoundingClientRect().top;
+  const ref = chat.clientHeight * 0.35;   // 参考线：可视区顶部往下 35%
+  let active = 0;
+  for (let i = 0; i < dotEls.length; i++) {
+    const rel = dotEls[i].node.getBoundingClientRect().top - chatTop;
+    if (rel <= ref) active = i;           // 已滚过参考线的最后一个问题 = 当前停留段
+    else break;
+  }
+  dotEls.forEach((d, i) => d.el.classList.toggle('active', i === active));
+}
+async function testConnection() {
+  setStatus('测试中…', false);
+  try {
+    const resp = await fetch(API_BASE + '/health', { method: 'GET' });
+    if (resp.ok) setStatus('✅ 连接正常 (' + API_BASE + ')', true);
+    else setStatus('❌ HTTP ' + resp.status + ' from ' + API_BASE, false);
+  } catch (e) {
+    setStatus('❌ 连不上 ' + API_BASE + '：' + e, false);
+  }
+}
+function parseFrame(frame) {
+  let event = 'message', data = '';
+  frame.split('\n').forEach(line => {
+    if (line.startsWith('event:')) event = line.slice(6).trim();
+    else if (line.startsWith('data:')) data += line.slice(5).trim();
+  });
+  if (!data) return null;
+  try { return {event, data: JSON.parse(data)}; } catch { return null; }
+}
+// 流式消息容器：答案逐字写 answerEl，工具卡片追加到 toolsEl
+function addBotStreaming() {
+  const d = document.createElement('div');
+  d.className = 'msg bot';
+  const answerEl = document.createElement('div');
+  d.appendChild(answerEl);
+  const toolsEl = document.createElement('div');
+  toolsEl.className = 'tools';
+  d.appendChild(toolsEl);
+  chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
+  return { d, answerEl, toolsEl };
+}
+// 单次流式请求：把工具步骤与答案写入传入的 box，成功返回结果对象，失败返回 {ok:false, error}
+async function runStreamAttempt(text, box) {
+  const pendingTools = new Map();
+  const toolNames = [];
+  const steps = [];
+  let fullText = '';
+  let lastError = null;
+  let gotAny = false;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 60000); // 60s 超时兜底，避免永久挂起
+  try {
+    const payload = {question: text, session_id: SESSION_ID, client_id: CLIENT_ID};
+    const resp = await fetch(API_BASE + '/chat/stream', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload), signal: controller.signal
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buf = '';
+    while (true) {
+      const {value, done} = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, {stream: true});
+      let idx;
+      while ((idx = buf.indexOf('\n\n')) !== -1) {
+        const frame = buf.slice(0, idx); buf = buf.slice(idx + 2);
+        const ev = parseFrame(frame);
+        if (!ev) continue;
+        gotAny = true;
+        if (ev.event === 'meta') {
+          if (ev.data.session_id) { SESSION_ID = ev.data.session_id; currentConvId = ev.data.session_id; }
+        } else if (ev.event === 'tool_start') {
+          const card = document.createElement('div');
+          card.className = 'tool ' + toolTypeClass(ev.data.name);
+          card.innerHTML = '<div class="head tool-toggle" onclick="this.parentElement.classList.toggle(\'open\')">'
+            + '<span class="t-status pending">⏳</span>'
+            + toolBadge(ev.data.name)
+            + '<span class="t-summary">⏳ 调用中…</span>'
+            + '<span class="t-caret">▸</span></div>'
+            + '<div class="t-detail">' + paramRow(ev.data.args)
+            + '<div class="result">🔧 返回: ⏳ 调用中…</div></div>';
+          box.toolsEl.appendChild(card);
+          pendingTools.set(ev.data.name, {card, args: ev.data.args});
+          toolNames.push(ev.data.name);
+          scrollIfNearBottom();
+        } else if (ev.event === 'tool_end') {
+          const entry = pendingTools.get(ev.data.name);
+          if (entry) {
+            const st = entry.card.querySelector('.t-status');
+            st.className = 't-status done'; st.textContent = '✓';
+            entry.card.querySelector('.t-summary').textContent = toolSummary(ev.data.name, entry.args, ev.data.result);
+            entry.card.querySelector('.result').textContent = '🔧 返回: ' + extractText(ev.data.result);
+            pendingTools.delete(ev.data.name);
+          }
+          steps.push({name: ev.data.name, args: ev.data.args, result: ev.data.result});
+          scrollIfNearBottom();
+        } else if (ev.event === 'token') {
+          fullText += ev.data.text;
+          box.answerEl.textContent = fullText;
+          scrollIfNearBottom();
+        } else if (ev.event === 'error') {
+          lastError = ev.data.message;
+          box.answerEl.textContent = '⚠️ ' + ev.data.message;
+          box.d.classList.add('err');
+        }
+      }
+    }
+    clearTimeout(timer);
+    const notes = [];
+    if (toolNames.includes('query_weather')) notes.push('🌤️ 天气为 Open-Meteo / 高德 预报参考');
+    if (toolNames.includes('query_train')) notes.push('🚄 高铁为线路参考，实时车次/票价/余票以 12306 为准');
+    if (toolNames.some(n => n.startsWith('maps_'))) notes.push('🗺️ 路线来自高德地图，具体以导航 App 为准');
+    // 连接建立但全程未收到任何有效事件：多半是网关在中途把流断开了
+    if (!gotAny) return {ok: false, error: '连接已建立，但未收到任何数据（可能被网关中断）'};
+    return {ok: true, fullText, steps, notes};
+  } catch (e) {
+    clearTimeout(timer);
+    if (e && e.name === 'AbortError') return {ok: false, error: '请求超时（>60s），后端或网关处理较慢'};
+    return {ok: false, error: lastError || String(e)};
+  }
+}
+async function send() {
+  const text = q.value.trim();
+  if (!text) return;
+  if (!currentConvId) { currentConvId = uuid(); SESSION_ID = currentConvId; }
+  conv.push({role: 'user', text, ts: Math.floor(Date.now() / 1000)});
+  q.value = ''; setBusy(true); renderAll();
+
+  const MAX_RETRIES = 2;
+  let box = addBotStreaming();
+  box.answerEl.textContent = '⏳ 正在思考…'; // 首屏即时反馈，避免首字延迟期间看起来“没反应”
+  let attempt = 0;
+  while (true) {
+    if (attempt > 0) {
+      // 重试时只显示一个温和的状态，不暴露“连接失败/重试”等技术细节
+      box.answerEl.textContent = '⏳ 正在思考…';
+      box.toolsEl.innerHTML = '';
+    }
+    const result = await runStreamAttempt(text, box);
+    if (result.ok) {
+      conv.push({role: 'bot', text: result.fullText, steps: result.steps, notes: result.notes, ts: Math.floor(Date.now() / 1000)});
+      renderAll();
+      refreshList();
+      break;
+    }
+    attempt++;
+    if (attempt > MAX_RETRIES) {
+      box.d.remove();
+      conv.push({role: 'bot', text: '⚠️ 请求失败：' + result.error + '（后端地址：' + API_BASE + '，会话：' + (SESSION_ID || '新会话') + '）'});
+      renderAll();
+      break;
+    }
+    // 短暂等待后重试；重试前清空本次 transient 框里的残次内容
+    await new Promise(r => setTimeout(r, 1500));
+    box.answerEl.textContent = '';
+    box.toolsEl.innerHTML = '';
+  }
+  setBusy(false);
+  closeSidebarMobile();
+}
+// ---------- 侧边栏历史对话 ----------
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function refreshList(opts) {
+  opts = opts || {};
+  try {
+    const r = await fetch(API_BASE + '/conversations?client_id=' + encodeURIComponent(CLIENT_ID));
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    lastList = data.conversations || [];
+    renderSidebar(lastList);
+    setStatus('已连接', true);
+    return true;
+  } catch (e) {
+    if (!opts.silent) showSidebarState('⏳ 服务启动中，点此重试', true);
+    setStatus('历史加载失败（服务可能正在启动）', false);
+    return false;
+  }
+}
+// 在侧边栏渲染一个状态项（可点击重试）
+function showSidebarState(msg, retry) {
+  sbList.innerHTML = '';
+  const e = document.createElement('div');
+  e.className = 'sb-empty';
+  e.textContent = msg;
+  if (retry) {
+    e.style.cursor = 'pointer';
+    e.onclick = async () => {
+      const ok = await refreshList();
+      if (ok && lastList.length) selectConv(lastList[0].id);
+      else if (ok) newChat();
+    };
+  }
+  sbList.appendChild(e);
+}
+function renderSidebar(list) {
+  sbList.innerHTML = '';
+  if (!list.length) {
+    const e = document.createElement('div');
+    e.className = 'sb-empty';
+    e.textContent = '还没有历史对话\n点上方「新建对话」开始';
+    e.style.whiteSpace = 'pre-line';
+    sbList.appendChild(e);
+    return;
+  }
+  list.forEach(c => {
+    const item = document.createElement('div');
+    item.className = 'conv-item' + (c.id === currentConvId ? ' active' : '');
+    const body = document.createElement('div');
+    body.className = 'ci-body';
+    const t = document.createElement('div');
+    t.className = 'ci-title';
+    t.textContent = c.title || '新对话';
+    t.title = c.title || '新对话';
+    const tm = document.createElement('div');
+    tm.className = 'ci-time';
+    tm.textContent = c.updated_at ? formatTs(c.updated_at) : '';
+    body.appendChild(t); body.appendChild(tm);
+    const del = document.createElement('button');
+    del.className = 'ci-del'; del.textContent = '🗑'; del.title = '删除';
+    del.onclick = (ev) => { ev.stopPropagation(); deleteConv(c.id); };
+    item.appendChild(body); item.appendChild(del);
+    item.dataset.id = c.id;
+    item.onclick = () => selectConv(c.id);
+    sbList.appendChild(item);
+  });
+}
+// 把一条历史消息统一成标准结构 {role, text, steps?, notes?}
+// 兼容早期版本以 ["role","text"] 数组形式存储的消息
+function normalizeMsg(m) {
+  if (Array.isArray(m)) {
+    return {role: m[0], text: m[1] || '', steps: m[2] || [], notes: m[3] || []};
+  }
+  if (m && typeof m === 'object') return m;
+  return {role: 'bot', text: String(m == null ? '' : m)};
+}
+async function selectConv(cid) {
+  // 先标记当前会话，确保 active 高亮立即生效，即使后续加载失败也不丢失
+  currentConvId = cid; SESSION_ID = cid;
+  document.querySelectorAll('.conv-item').forEach(el => el.classList.toggle('active', el.dataset.id === cid));
+  try {
+    setStatus('加载对话中…', false);
+    const r = await fetch(API_BASE + '/conversations/' + encodeURIComponent(cid) + '?client_id=' + encodeURIComponent(CLIENT_ID));
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    conv = Array.isArray(data.messages) ? data.messages.map(normalizeMsg) : [];
+    renderAll();
+    setStatus('已连接', true);
+  } catch (e) {
+    // 失败也要给出明确提示（不再静默），但 active 高亮已就位
+    setStatus('对话加载失败，请重试', false);
+  }
+  renderSidebar(lastList);  // 最后统一渲染，保证 active 与 currentConvId 一致
+}
+async function deleteConv(cid) {
+  if (!confirm('确定删除这段对话？')) return;
+  try {
+    await fetch(API_BASE + '/conversations/' + encodeURIComponent(cid) + '?client_id=' + encodeURIComponent(CLIENT_ID), {method: 'DELETE'});
+  } catch (e) {}
+  if (cid === currentConvId) newChat();
+  else refreshList();
+}
+function newChat() {
+  currentConvId = null; SESSION_ID = null; conv = [];
+  renderAll(); refreshList(); closeSidebarMobile(); q.focus();
+}
+function closeSidebarMobile() { sidebar.classList.remove('open'); }
+
+saveBaseBtn.onclick = () => {
+  API_BASE = apiBaseInput.value.trim();
+  localStorage.setItem('api_base', API_BASE);
+  setStatus('已保存：' + API_BASE, false);
+};
+testConnBtn.onclick = testConnection;
+sendBtn.onclick = send;
+newBtn.onclick = newChat;
+sbToggle.onclick = () => sidebar.classList.toggle('open');
+q.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+// 滚动时实时高亮当前停留段对应的圆点
+chat.addEventListener('scroll', updateActiveDot, {passive: true});
+// 窗口尺寸变化时“屏数”可能变化，重绘圆点
+window.addEventListener('resize', () => { renderScrollDots(); });
+document.querySelectorAll('.chip').forEach(c => {
+  c.onclick = () => { q.value = c.textContent; send(); };
+});
+// 页面加载：拉取历史列表，自动打开最近一段对话（无则进入新建态）
+(async function init() {
+  showSidebarState('⏳ 正在连接服务…', false);
+  let ok = await refreshList();
+  // 冷启动兜底：首次失败（后端可能正在唤醒）3 秒后自动再试一次
+  if (!ok) {
+    await sleep(3000);
+    ok = await refreshList();
+  }
+  if (ok && lastList.length) await selectConv(lastList[0].id);
+  else if (ok) newChat();
+  // 若仍失败，showSidebarState 已显示"点此重试"，不空白
+})();
+</script>
+</body>
+</html>
